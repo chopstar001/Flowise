@@ -199,7 +199,7 @@ export async function start(): Promise<void> {
     serverApp = new App()
 
     const host = process.env.HOST
-    const port = parseInt(process.env.PORT || '', 10) || 3000
+    const port = parseInt(process.env.PORT || '', 10) || 3003
     const server = http.createServer(serverApp.app)
 
     const io = new Server(server, {
