@@ -1,7 +1,6 @@
 import { ICommonObject, INode, INodeData, INodeParams } from '../../../src/Interface'
 import { Telegraf, Context } from 'telegraf'
 import { message } from 'telegraf/filters'
-import { getBaseClasses } from '../../../src/utils'
 import { BaseMessage, HumanMessage, AIMessage } from '@langchain/core/messages'
 import { 
     ChatPromptTemplate, 
@@ -14,9 +13,10 @@ import { BaseChatModel } from '@langchain/core/language_models/chat_models'
 import { Tool } from 'langchain/tools'
 import { Update } from 'telegraf/typings/core/types/typegram'
 import { Document } from 'langchain/document'
-import { CallbackManagerForRetrieverRun } from "@langchain/core/callbacks/manager";
-import { Callbacks } from "@langchain/core/callbacks/manager";
-
+import { BaseMemory } from 'langchain/memory'
+import { Callbacks } from "@langchain/core/callbacks/manager"
+import { InputValues, MemoryVariables, OutputValues } from 'langchain/dist/memory/base';
+import { BufferMemoryExtended } from './BufferMemoryExtended';
 
 class SimpleInMemoryRetriever extends BaseRetriever {
     private documents: Document[];
@@ -36,7 +36,6 @@ class SimpleInMemoryRetriever extends BaseRetriever {
         query: string,
         callbacks?: Callbacks
     ): Promise<Document[]> {
-        // Simple keyword matching (not ideal, but works as a fallback)
         return this.documents.filter(doc => 
             doc.pageContent.toLowerCase().includes(query.toLowerCase())
         );
@@ -52,10 +51,12 @@ class SimpleInMemoryRetriever extends BaseRetriever {
         };
     }
 }
+
 interface ChainInput {
     question: string;
     chat_history: string;
 }
+
 class TelegramBot_Agents implements INode {
     label: string
     name: string
@@ -66,10 +67,14 @@ class TelegramBot_Agents implements INode {
     category: string
     baseClasses: string[]
     inputs: INodeParams[]
+
     private bot: Telegraf<Context<Update>> | null = null
     private chain: RunnableSequence<ChainInput, string> | null = null
-    private chatHistory: Map<number, BaseMessage[]> = new Map()
     private isInitialized: boolean = false
+    private memory: BaseMemory
+    private retriever: BaseRetriever
+    private chatModel: BaseChatModel
+    private tools: Tool[]
 
     constructor() {
         this.label = 'Telegram Bot with Retrieval Chain'
@@ -80,6 +85,7 @@ class TelegramBot_Agents implements INode {
         this.category = 'Agents'
         this.description = 'Interact with Telegram using a bot with Retrieval Chain capabilities'
         this.baseClasses = [this.type, 'Composer']
+        this.memory = new BufferMemoryExtended(10); // Remember last 10 exchanges
         this.inputs = [
             {
                 label: 'Bot Token',
@@ -93,6 +99,11 @@ class TelegramBot_Agents implements INode {
                 name: 'chatModel',
                 type: 'BaseChatModel',
                 optional: false
+            },
+            {
+                label: 'Memory',
+                name: 'memory',
+                type: 'BaseMemory'
             },
             {
                 label: 'Retriever',
@@ -116,130 +127,52 @@ class TelegramBot_Agents implements INode {
         try {
             console.log("Checking inputs...")
             const botToken = nodeData.inputs?.botToken as string
-            const llm = nodeData.inputs?.chatModel as BaseChatModel
-            let retriever = nodeData.inputs?.retriever as BaseRetriever
-            const tools = nodeData.inputs?.tools as Tool[] || []
+            this.chatModel = nodeData.inputs?.chatModel as BaseChatModel
+            this.retriever = nodeData.inputs?.retriever as BaseRetriever
+            this.memory = nodeData.inputs?.memory as BaseMemory || new BufferMemoryExtended(10)
+            this.tools = nodeData.inputs?.tools as Tool[] || []
 
             console.log("Bot Token (first 5 chars):", botToken?.substring(0, 5))
-            console.log("LLM type:", llm?.constructor.name)
-            console.log("Retriever type:", retriever?.constructor.name)
-            console.log("Number of tools:", tools.length)
+            console.log("LLM type:", this.chatModel?.constructor.name)
+            console.log("Memory type:", this.memory.constructor.name)
+            console.log("Retriever type:", this.retriever?.constructor.name)
+            console.log("Number of tools:", this.tools.length)
 
-            if (!botToken || !llm) {
+            if (!this.memory) {
+                console.log("No memory provided, using BufferMemoryExtended as default.")
+                this.memory = new BufferMemoryExtended(10); // Remember last 10 exchanges
+            }
+
+            if (!botToken || !this.chatModel) {
                 throw new Error('Missing required inputs: botToken or chatModel')
             }
 
-            // Use the SimpleInMemoryRetriever as a fallback
-            if (!retriever) {
+            if (!this.retriever) {
                 console.log("No retriever provided. Using SimpleInMemoryRetriever as fallback.")
-                retriever = new SimpleInMemoryRetriever()
+                this.retriever = new SimpleInMemoryRetriever()
             }
 
             console.log("All required inputs are present")
-
-            console.log("Creating CONDENSE_QUESTION_PROMPT...")
-            const CONDENSE_QUESTION_PROMPT = ChatPromptTemplate.fromMessages([
-                HumanMessagePromptTemplate.fromTemplate(
-                    "Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.\n\nChat History:\n{chat_history}\nFollow Up Input: {question}\nStandalone question:"
-                )
-            ])
-
-            console.log("Creating qaPrompt...")
-            const qaPrompt = ChatPromptTemplate.fromMessages([
-                SystemMessagePromptTemplate.fromTemplate(
-                    "You are a helpful AI assistant. Use the following pieces of context to answer the human's question. If you don't know the answer, just say that you don't know, don't try to make up an answer."
-                ),
-                HumanMessagePromptTemplate.fromTemplate("Context: {context}"),
-                HumanMessagePromptTemplate.fromTemplate("Question: {question}"),
-                HumanMessagePromptTemplate.fromTemplate("Answer the question based on the context provided.")
-            ])
-
-            console.log("Creating standaloneQuestionChain...")
-            const standaloneQuestionChain = RunnableSequence.from([
-                CONDENSE_QUESTION_PROMPT,
-                llm,
-                (output: any) => {
-                    if (typeof output?.content === 'string') {
-                        return output.content;
-                    }
-                    throw new Error('Unexpected output format from LLM');
-                }
-            ])
-
-            console.log("Creating retrieverChain...")
-            const retrieverChain = RunnableSequence.from([
-                (input: string) => {
-                    console.log("Querying retriever with:", input)
-                    return input
-                },
-                async (question: string) => {
-                    try {
-                        console.log("Calling retriever.getRelevantDocuments...")
-                        const results = await retriever.getRelevantDocuments(question)
-                        console.log("Retriever returned results:", results.length)
-                        return results.map(doc => doc.pageContent).join("\n\n")
-                    } catch (error) {
-                        console.error("Error in retriever:", error)
-                        return "Error retrieving information. Using fallback response."
-                    }
-                }
-            ])
-
-            console.log("Creating answerChain...")
-            const answerChain = RunnableSequence.from([
-                qaPrompt,
-                llm,
-                (output: any) => {
-                    if (typeof output?.content === 'string') {
-                        return output.content;
-                    }
-                    throw new Error('Unexpected output format from LLM');
-                }
-            ])
-
-            console.log("Creating main chain...")
-            this.chain = RunnableSequence.from([
-                {
-                    standalone_question: async (input: ChainInput) => {
-                        console.log("Invoking standaloneQuestionChain...")
-                        return standaloneQuestionChain.invoke({
-                            question: input.question,
-                            chat_history: input.chat_history
-                        })
-                    },
-                    original_input: (input: ChainInput) => input,
-                },
-                {
-                    context: async (input: { standalone_question: string; original_input: ChainInput }) => {
-                        console.log("Invoking retrieverChain...")
-                        return retrieverChain.invoke(input.standalone_question)
-                    },
-                    question: (input: { original_input: ChainInput }) => input.original_input.question,
-                    chat_history: (input: { original_input: ChainInput }) => input.original_input.chat_history,
-                },
-                answerChain
-            ])
-
-            console.log("Main chain created successfully")
 
             console.log("Initializing Telegram bot...")
             this.bot = new Telegraf(botToken)
 
             console.log("Setting up bot commands...")
-            this.bot.command('start', (ctx) => {
-                ctx.reply('Welcome! I\'m your AI assistant with Retrieval Chain capabilities.')
-            })
+            this.bot.command('start', this.handleStart.bind(this))
+            this.bot.command('help', this.handleHelp.bind(this))
 
-            this.bot.command('help', (ctx) => {
-                ctx.reply('I can assist you with various tasks and provide information from my knowledge base. Just send me a message!')
-            })
-
+            console.log("Setting up message handler...")
             this.bot.on(message('text'), this.handleMessage.bind(this))
 
-            console.log("Launching bot...")
+            console.log("Initializing the chain...")
+            this.chain = this.createChain()
+
+            console.log('Launching bot...')
             await this.bot.launch()
-            this.isInitialized = true
             console.log('Telegram bot launched successfully')
+
+            this.isInitialized = true
+            console.log('TelegramBot_Agents initialization completed successfully')
 
             return this.bot
 
@@ -249,59 +182,140 @@ class TelegramBot_Agents implements INode {
         }
     }
 
-    // ... (rest of the class implementation remains the same)
+    private createChain(): RunnableSequence<ChainInput, string> {
+        const CONDENSE_QUESTION_PROMPT = ChatPromptTemplate.fromMessages([
+            SystemMessagePromptTemplate.fromTemplate(
+                "Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question. " +
+                "If the follow up question is not related to the conversation, just repeat the follow up question."
+            ),
+            HumanMessagePromptTemplate.fromTemplate("{chat_history}\n\nFollow Up Question: {question}\n\nStandalone question:"),
+        ]);
+    
+        const QA_PROMPT = ChatPromptTemplate.fromMessages([
+            SystemMessagePromptTemplate.fromTemplate(
+                "You are a helpful AI assistant. Use the following pieces of context to answer the human's question. " +
+                "If you don't know the answer, just say that you don't know, don't try to make up an answer."
+            ),
+            HumanMessagePromptTemplate.fromTemplate("Context: {context}\n\nQuestion: {question}\n\nAnswer:"),
+        ]);
+    
+        return RunnableSequence.from([
+            {
+                standalone_question: async (input: ChainInput) => {
+                    const { question, chat_history } = input;
+                    const formattedPrompt = await CONDENSE_QUESTION_PROMPT.formatMessages({
+                        chat_history,
+                        question,
+                    });
+                    const response = await this.chatModel.call(formattedPrompt);
+                    return response.content;
+                },
+                original_input: (input: ChainInput) => input.question,
+                chat_history: (input: ChainInput) => input.chat_history,
+            },
+            {
+                context: async (input: { standalone_question: string }) => {
+                    const relevantDocs = await this.retriever.invoke(input.standalone_question);
+                    return relevantDocs.map(doc => doc.pageContent).join("\n\n");
+                },
+                question: (input) => input.standalone_question,
+            },
+            async (input) => {
+                const formattedPrompt = await QA_PROMPT.formatMessages({
+                    context: input.context,
+                    question: input.question,
+                });
+                const response = await this.chatModel.invoke(formattedPrompt);
+                return response.content as string;
+            },
+        ]);
+    }
 
-    private async handleMessage(ctx: Context<Update>) {
+    private async handleStart(ctx: Context) {
+        console.log("Received /start command")
+        await ctx.reply('Welcome! I\'m your AI assistant with Retrieval Chain capabilities.')
+    }
+
+    private async handleHelp(ctx: Context) {
+        console.log("Received /help command")
+        await ctx.reply('I can assist you with various tasks and provide information from my knowledge base. Just send me a message!')
+    }
+
+    private async handleMessage(ctx: Context): Promise<void> {
+        if (!ctx.message || !('text' in ctx.message)) {
+            console.error('Received message is not a text message or is undefined');
+            await ctx.reply('Sorry, I can only process text messages.');
+            return;
+        }
+    
         if (!this.chain) {
-            console.error('Chain is not initialized')
-            await ctx.reply('Sorry, I\'m not ready to process messages yet.')
-            return
+            console.error('Chain is not initialized');
+            await ctx.reply('Sorry, I\'m not ready to process messages yet.');
+            return;
         }
-
-        const msg = ctx.message
-        if (!msg || !('text' in msg)) {
-            console.error('Received message is not a text message')
-            await ctx.reply('Sorry, I can only process text messages.')
-            return
-        }
-
+    
+        console.log(`Received message: ${ctx.message.text}`);
+    
         try {
-            const userId = msg.from.id
-            const userMessage = msg.text
-            const chatHistory = this.chatHistory.get(userId) || []
-
-            const formattedHistory = this.formatChatHistory(chatHistory)
-
+            const userId = ctx.message.from.id.toString();
+            const userMessage = ctx.message.text;
+    
+            console.log(`Processing message from user ${userId}: "${userMessage}"`);
+    
+            const memoryVariables = await this.memory.loadMemoryVariables({ chatId: userId });
+            console.log("Memory variables:", JSON.stringify(memoryVariables, null, 2));
+    
+            const chatHistory = memoryVariables.chat_history as string;
+            console.log(`Chat history length: ${chatHistory.length}`);
+    
             const result = await this.chain.invoke({
                 question: userMessage,
-                chat_history: formattedHistory
-            })
-
-            const responseText = result || 'Sorry, I couldn\'t generate a response.'
-            await ctx.reply(responseText)
-
-            chatHistory.push(new HumanMessage(userMessage))
-            chatHistory.push(new AIMessage(responseText))
-            this.chatHistory.set(userId, chatHistory)
-
+                chat_history: chatHistory
+            });
+    
+            console.log(`Chain result: ${result}`);
+    
+            const responseText = result || 'Sorry, I couldn\'t generate a response.';
+            await ctx.reply(responseText);
+    
+            // Save context with a single input key
+            await this.memory.saveContext(
+                { input: JSON.stringify({ message: userMessage, chatId: userId }) },
+                { output: responseText }
+            );
+    
+            // Log updated memory for debugging
+            const updatedMemory = await this.memory.loadMemoryVariables({ chatId: userId });
+            console.log('Updated memory:', JSON.stringify(updatedMemory, null, 2));
+    
         } catch (error) {
-            console.error('Error processing message:', error)
-            await ctx.reply('Sorry, I encountered an error while processing your message.')
+            console.error('Error processing message:', error);
+            await ctx.reply('Sorry, I encountered an error while processing your message.');
         }
     }
-
-    private formatChatHistory(history: BaseMessage[]): string {
+    private formatChatHistory(history: any[]): string {
+        if (!Array.isArray(history)) {
+            console.warn('Chat history is not an array:', history);
+            return '';
+        }
         return history.map(msg => {
-            if (msg instanceof HumanMessage) {
-                return `Human: ${msg.content}`;
-            } else if (msg instanceof AIMessage) {
-                return `AI: ${msg.content}`;
+            if (typeof msg === 'string') {
+                return msg;
+            } else if (msg && typeof msg === 'object') {
+                if (msg instanceof HumanMessage) {
+                    return `Human: ${msg.content}`;
+                } else if (msg instanceof AIMessage) {
+                    return `AI: ${msg.content}`;
+                } else if ('role' in msg && 'content' in msg) {
+                    return `${msg.role}: ${msg.content}`;
+                }
             }
-            return `Unknown: ${msg.content}`;
+            return `Unknown: ${JSON.stringify(msg)}`;
         }).join('\n');
     }
-
     async run(nodeData: INodeData, input: string, options: ICommonObject): Promise<string> {
+        console.log(`Run method called with input: "${input}"`);
+        console.log(`Options:`, options);
         if (!this.isInitialized || !this.bot || !this.chain) {
             throw new Error('Bot or chain is not initialized')
         }
@@ -311,8 +325,8 @@ class TelegramBot_Agents implements INode {
                 await this.bot.telegram.sendMessage(options.chatId, input)
                 return 'Message sent successfully'
             } catch (error) {
-                console.error('Error sending message:', error)
-                throw new Error('Error sending message')
+                console.error('Error sending message:', error);
+                throw new Error('Error sending message');
             }
         } else {
             try {
