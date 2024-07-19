@@ -284,6 +284,296 @@
             ]
         },
         {
+            "name": "chatOpenRouter",
+            "models": [
+                {
+                    "label": "qwen-2-7b-instruct",
+                    "name": "qwen/qwen-2-7b-instruct",
+                    "description": "Qwen2 7B transformer-based model for language understanding, multilingual capabilities, coding, mathematics, and reasoning"
+                },
+                {
+                    "label": "gemma-2-27b",
+                    "name": "google/gemma-2-27b-it",
+                    "description": "Google's Gemma 2 27B open model built from Gemini technology"
+                },
+                {
+                    "label": "hermes-2-theta-8b",
+                    "name": "nousresearch/hermes-2-theta-llama-3-8b",
+                    "description": "Experimental merge model based on Llama 3 with distinctive writing style"
+                },
+                {
+                    "label": "magnum-72b",
+                    "name": "alpindale/magnum-72b",
+                    "description": "72B model designed to achieve prose quality of Claude 3 models"
+                },
+                {
+                    "label": "gemma-2-9b",
+                    "name": "google/gemma-2-9b-it",
+                    "description": "Google's Gemma 2 9B open-source language model for efficiency and performance"
+                },
+                {
+                    "label": "gemma-2-9b-free",
+                    "name": "google/gemma-2-9b-it:free",
+                    "description": "Free, rate-limited version of Google's Gemma 2 9B model"
+                },
+                {
+                    "label": "stheno-8b",
+                    "name": "sao10k/l3-stheno-8b",
+                    "description": "Llama 3 Stheno 8B v3.3 32K creative writing/roleplay model"
+                },
+                {
+                    "label": "flavor-of-the-week",
+                    "name": "openrouter/flavor-of-the-week",
+                    "description": "Router model rotating underlying model weekly"
+                },
+                {
+                    "label": "yi-large",
+                    "name": "01-ai/yi-large",
+                    "description": "Yi Large model by 01.AI for knowledge search, data classification, chat bots, and customer service"
+                },
+                {
+                    "label": "jamba-instruct",
+                    "name": "ai21/jamba-instruct",
+                    "description": "AI21 Labs' Jamba-Instruct model optimized for enterprise applications"
+                },
+                {
+                    "label": "nemotron-4-340b-instruct",
+                    "name": "nvidia/nemotron-4-340b-instruct",
+                    "description": "NVIDIA's Nemotron-4-340B-Instruct English-language chat model"
+                },
+                {
+                    "label": "claude-3.5-sonnet",
+                    "name": "anthropic/claude-3.5-sonnet",
+                    "description": "Anthropic's Claude 3.5 Sonnet model with better-than-Opus capabilities and faster-than-Sonnet speeds"
+                },
+                {
+                    "label": "claude-3.5-sonnet-beta",
+                    "name": "anthropic/claude-3.5-sonnet:beta",
+                    "description": "Self-moderated version of Claude 3.5 Sonnet"
+                },
+                {
+                    "label": "euryale-70b",
+                    "name": "sao10k/l3-euryale-70b",
+                    "description": "Llama 3 Euryale 70B v2.1 model focused on creative roleplay"
+                },
+                {
+                    "label": "qwen-2-7b-instruct-free",
+                    "name": "qwen/qwen-2-7b-instruct:free",
+                    "description": "Free, rate-limited version of Qwen 2 7B Instruct"
+                },
+                {
+                    "label": "phi-3-medium-4k-instruct",
+                    "name": "microsoft/phi-3-medium-4k-instruct",
+                    "description": "Microsoft's Phi-3 4K Medium 14-billion parameter model for advanced language tasks"
+                },
+                {
+                    "label": "dolphin-mixtral-8x22b",
+                    "name": "cognitivecomputations/dolphin-mixtral-8x22b",
+                    "description": "Dolphin 2.9.2 Mixtral 8x22B model for instruction following, conversation, and coding"
+                },
+                {
+                    "label": "qwen-2-72b-instruct",
+                    "name": "qwen/qwen-2-72b-instruct",
+                    "description": "Qwen2 72B transformer-based model for language understanding, multilingual capabilities, coding, mathematics, and reasoning"
+                },
+                {
+                    "label": "openchat-8b",
+                    "name": "openchat/openchat-8b",
+                    "description": "OpenChat 3.6 8B open-source language model fine-tuned with C-RLFT"
+                },
+                {
+                    "label": "mistral-7b-instruct",
+                    "name": "mistralai/mistral-7b-instruct",
+                    "description": "Mistral 7B Instruct high-performing 7.3B parameter model"
+                },
+                {
+                    "label": "mistral-7b-instruct-v0.3",
+                    "name": "mistralai/mistral-7b-instruct-v0.3",
+                    "description": "Improved version of Mistral 7B Instruct with extended vocabulary and function calling support"
+                },
+                {
+                    "label": "hermes-2-pro-llama-3-8b",
+                    "name": "nousresearch/hermes-2-pro-llama-3-8b",
+                    "description": "Upgraded version of Nous Hermes 2 with function calling and JSON mode dataset"
+                },
+                {
+                    "label": "phi-3-mini-128k-instruct",
+                    "name": "microsoft/phi-3-mini-128k-instruct",
+                    "description": "Microsoft's Phi-3 Mini 128K 3.8B parameter model for advanced language tasks"
+                },
+                {
+                    "label": "phi-3-mini-128k-instruct-free",
+                    "name": "microsoft/phi-3-mini-128k-instruct:free",
+                    "description": "Free, rate-limited version of Phi-3 Mini 128K Instruct"
+                },
+                {
+                    "label": "phi-3-medium-128k-instruct",
+                    "name": "microsoft/phi-3-medium-128k-instruct",
+                    "description": "Microsoft's Phi-3 128K Medium 14-billion parameter model for advanced language tasks"
+                },
+                {
+                    "label": "phi-3-medium-128k-instruct-free",
+                    "name": "microsoft/phi-3-medium-128k-instruct:free",
+                    "description": "Free, rate-limited version of Phi-3 Medium 128K Instruct"
+                },
+                {
+                    "label": "llama-3-lumimaid-70b",
+                    "name": "neversleep/llama-3-lumimaid-70b",
+                    "description": "NeverSleep's Llama 3 70B finetune for balanced roleplay and general chat"
+                },
+                {
+                    "label": "llama-3-sonar-small-32k-chat",
+                    "name": "perplexity/llama-3-sonar-small-32k-chat",
+                    "description": "Perplexity's Llama3 Sonar 8B offline chat model"
+                },
+                {
+                    "label": "llama-3-sonar-small-32k-online",
+                    "name": "perplexity/llama-3-sonar-small-32k-online",
+                    "description": "Perplexity's Llama3 Sonar 8B online model with Internet access"
+                },
+                {
+                    "label": "llama-3-sonar-large-32k-chat",
+                    "name": "perplexity/llama-3-sonar-large-32k-chat",
+                    "description": "Perplexity's Llama3 Sonar 70B offline chat model"
+                },
+                {
+                    "label": "llama-3-sonar-large-32k-online",
+                    "name": "perplexity/llama-3-sonar-large-32k-online",
+                    "description": "Perplexity's Llama3 Sonar 70B online model with Internet access"
+                },
+                {
+                    "label": "deepseek-chat",
+                    "name": "deepseek/deepseek-chat",
+                    "description": "DeepSeek-V2 Chat 236B total parameter MoE model for conversation"
+                },
+                {
+                    "label": "deepseek-coder",
+                    "name": "deepseek/deepseek-coder",
+                    "description": "DeepSeek-Coder-V2 MoE code language model"
+                },
+                {
+                    "label": "gpt-4o",
+                    "name": "openai/gpt-4o",
+                    "description": "OpenAI's latest AI model supporting both text and image inputs with text outputs"
+                },
+                {
+                    "label": "gpt-4o-2024-05-13",
+                    "name": "openai/gpt-4o-2024-05-13",
+                    "description": "OpenAI's latest AI model supporting both text and image inputs with text outputs (May 13, 2024 version)"
+                },
+                {
+                    "label": "llama-3-8b",
+                    "name": "meta-llama/llama-3-8b",
+                    "description": "Meta's Llama 3 8B base pre-trained version"
+                },
+                {
+                    "label": "llama-3-70b",
+                    "name": "meta-llama/llama-3-70b",
+                    "description": "Meta's Llama 3 70B base pre-trained version"
+                },
+                {
+                    "label": "llamaguard-2-8b",
+                    "name": "meta-llama/llama-guard-2-8b",
+                    "description": "Meta's LlamaGuard 2 8B safeguard model based on Llama 3 family"
+                },
+                {
+                    "label": "olmo-7b-instruct",
+                    "name": "allenai/olmo-7b-instruct",
+                    "description": "Allen Institute for AI's OLMo 7B Instruct model for question answering"
+                },
+                {
+                    "label": "qwen-110b-chat",
+                    "name": "qwen/qwen-110b-chat",
+                    "description": "Qwen1.5 110B beta version of Qwen2 chat model"
+                },
+                {
+                    "label": "qwen-72b-chat",
+                    "name": "qwen/qwen-72b-chat",
+                    "description": "Qwen1.5 72B beta version of Qwen2 chat model"
+                },
+                {
+                    "label": "qwen-32b-chat",
+                    "name": "qwen/qwen-32b-chat",
+                    "description": "Qwen1.5 32B beta version of Qwen2 chat model"
+                },
+                {
+                    "label": "qwen-14b-chat",
+                    "name": "qwen/qwen-14b-chat",
+                    "description": "Qwen1.5 14B beta version of Qwen2 chat model"
+                },
+                {
+                    "label": "qwen-7b-chat",
+                    "name": "qwen/qwen-7b-chat",
+                    "description": "Qwen1.5 7B beta version of Qwen2 chat model"
+                },
+                {
+                    "label": "qwen-4b-chat",
+                    "name": "qwen/qwen-4b-chat",
+                    "description": "Qwen1.5 4B beta version of Qwen2 chat model"
+                },
+                {
+                    "label": "llama-3-8b-instruct-free",
+                    "name": "meta-llama/llama-3-8b-instruct:free",
+                    "description": "Free, rate-limited version of Meta's Llama 3 8B Instruct"
+                },
+                {
+                    "label": "llama-3-lumimaid-8b",
+                    "name": "neversleep/llama-3-lumimaid-8b",
+                    "description": "NeverSleep's Llama 3 8B finetune for balanced roleplay and general chat"
+                },
+                {
+                    "label": "llama-3-lumimaid-8b-extended",
+                    "name": "neversleep/llama-3-lumimaid-8b:extended",
+                    "description": "Extended context version of Llama 3 Lumimaid 8B"
+                },
+                {
+                    "label": "snowflake-arctic-instruct",
+                    "name": "snowflake/snowflake-arctic-instruct",
+                    "description": "Snowflake AI Research Team's Arctic dense-MoE Hybrid transformer model"
+                },
+                {
+                    "label": "firellava-13b",
+                    "name": "fireworks/firellava-13b",
+                    "description": "FireLLaVA 13B multimodal model for understanding text and images"
+                },
+                {
+                    "label": "soliloquy-l3",
+                    "name": "lynn/soliloquy-l3",
+                    "description": "Llama 3 Soliloquy 8B v2 roleplaying model"
+                },
+                {
+                    "label": "fimbulvetr-11b-v2",
+                    "name": "sao10k/fimbulvetr-11b-v2",
+                    "description": "Fimbulvetr 11B v2 creative writing model"
+                },
+                {
+                    "label": "llama-3-8b-instruct-extended",
+                    "name": "meta-llama/llama-3-8b-instruct:extended",
+                    "description": "Extended context version of Meta's Llama 3 8B Instruct"
+                },
+                {
+                    "label": "llama-3-8b-instruct-nitro",
+                    "name": "meta-llama/llama-3-8b-instruct:nitro",
+                    "description": "Higher-throughput version of Meta's Llama 3 8B Instruct"
+                },
+                {
+                    "label": "llama-3-70b-instruct-nitro",
+                    "name": "meta-llama/llama-3-70b-instruct:nitro",
+                    "description": "Higher-throughput version of Meta's Llama 3 70B Instruct"
+                },
+                {
+                    "label": "llama-3-8b-instruct",
+                    "name": "meta-llama/llama-3-8b-instruct",
+                    "description": "Meta's Llama 3 8B Instruct model optimized for dialogue"
+                },
+                {
+                    "label": "llama-3-70b-instruct",
+                    "name": "meta-llama/llama-3-70b-instruct",
+                    "description": "Meta's Llama 3 70B Instruct model optimized for dialogue"
+                }
+            ]
+        }
+        {
             "name": "chatAnthropic",
             "models": [
                 {

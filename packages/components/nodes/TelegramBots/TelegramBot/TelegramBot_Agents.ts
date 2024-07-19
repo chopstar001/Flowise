@@ -668,10 +668,21 @@ class TelegramBot_Agents implements INode {
             console.error('Sender ID is undefined');
             return;
         }
-
+        // Check if the bot is mentioned
+        const botUsername = this.bot?.botInfo?.username;
+        if (!botUsername) {
+        console.error('Bot username is undefined');
+        return;
+        }
+        const botMentionRegex = new RegExp(`@${botUsername}\\b`, 'i');
+        if (!botMentionRegex.test(message.text)) {
+            console.log('Bot not mentioned, ignoring message');
+            return;
+        }
         console.log(`Processing message from sender ${senderId} (username: ${senderUsername}) in chat ${chatId}`);
         console.log(`Sender info: ${JSON.stringify(message.from, null, 2)}`);
-
+        const cleanedMessage = message.text.replace(botMentionRegex, '').trim();
+        console.log(`Bot mentioned. Cleaned message: "${cleanedMessage}"`);
         const isGroup = ctx.chat.type === 'group' || ctx.chat.type === 'supergroup';
         console.log(`Is group chat: ${isGroup}`);
 
@@ -682,18 +693,18 @@ class TelegramBot_Agents implements INode {
             console.log(`Processing group message in chat ${chatId}`);
             const isBotByCheck = await this.isBotInGroup(chatId, senderId);
             console.log(`Is sender a bot (according to our check): ${isBotByCheck}`);
-
-            if (isKnownBot || (isBotByCheck && senderId !== this.botId)) {
+    
+            if (isBotByCheck && senderId !== this.botId) {
                 console.log(`Message is from another bot (ID: ${senderId}, Username: ${senderUsername})`);
-                await this.handleBotMessage(ctx, message);
+                await this.handleBotMessage(ctx, { ...message, text: cleanedMessage });
             } else {
                 console.log(`Message is from a human user or this bot`);
-                await this.handleHumanMessage(ctx, message);
+                await this.handleHumanMessage(ctx, { ...message, text: cleanedMessage });
             }
         } else {
             console.log("Processing as private chat message");
-            const isAI = isKnownBot || await this.isAIUser(ctx);
-            await this.processMessage(ctx, message, isAI);
+            const isAI = await this.isAIUser(ctx);
+            await this.processMessage(ctx, { ...message, text: cleanedMessage }, isAI);
         }
     }
     private async checkRetrieverConfiguration(): Promise<void> {

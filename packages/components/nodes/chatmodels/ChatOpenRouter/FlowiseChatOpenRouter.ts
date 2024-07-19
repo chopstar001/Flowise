@@ -6,6 +6,7 @@ import { ChatResult, ChatGeneration } from '@langchain/core/outputs'
 import { BaseCache } from '@langchain/core/caches'
 import { StructuredTool } from '@langchain/core/tools'
 import { RunnableInterface, type RunnableConfig } from '@langchain/core/runnables';
+import { IMultiModalOption } from '../../../src/Interface';
 import axios from 'axios'
 
 function safeStringify(obj: any, indent = 2): string {
@@ -49,6 +50,7 @@ export class ChatOpenRouter extends BaseChatModel<OpenRouterCallOptions> {
     streaming?: boolean;
     cache?: BaseCache;
     tools: StructuredTool[];
+    multiModalOption?: IMultiModalOption;  // Add this line
 
     constructor(params: OpenRouterParams) {
         super(params);
@@ -68,6 +70,9 @@ export class ChatOpenRouter extends BaseChatModel<OpenRouterCallOptions> {
     }
     _modelType() {
         return 'chat-openrouter';
+    }
+    setMultiModalOption(multiModalOption: IMultiModalOption): void {  // Add this method
+        this.multiModalOption = multiModalOption;
     }
 
     async _generate(messages: BaseMessage[], options: this['ParsedCallOptions'], runManager?: CallbackManagerForLLMRun): Promise<ChatResult> {

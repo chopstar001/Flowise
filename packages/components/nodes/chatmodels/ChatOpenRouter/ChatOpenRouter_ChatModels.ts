@@ -1,4 +1,4 @@
-import { ICommonObject, INode, INodeData, INodeOptionsValue, INodeParams } from '../../../src/Interface'
+import { ICommonObject, INode, INodeData, INodeOptionsValue, INodeParams, IMultiModalOption } from '../../../src/Interface'
 import { getBaseClasses, getCredentialData, getCredentialParam } from '../../../src/utils'
 import { ChatOpenRouter, OpenRouterParams } from './FlowiseChatOpenRouter'
 import { BaseCache } from '@langchain/core/caches'
@@ -103,6 +103,14 @@ class ChatOpenRouter_ChatModels implements INode {
                 type: 'boolean',
                 default: true,
                 optional: true
+            },
+            {
+                label: 'Allow Image Uploads',
+                name: 'allowImageUploads',
+                type: 'boolean',
+                description: 'Automatically uses vision-capable models when an image is uploaded from chat.',
+                default: false,
+                optional: true
             }
         ]
     }
@@ -168,6 +176,7 @@ class ChatOpenRouter_ChatModels implements INode {
             }
         
             console.log('OpenRouter API key retrieved successfully');
+            const allowImageUploads = nodeData.inputs?.allowImageUploads as boolean;
 
             const obj: OpenRouterParams = {
                 modelName,
@@ -184,6 +193,13 @@ class ChatOpenRouter_ChatModels implements INode {
             const model = new ChatOpenRouter(obj);
             console.log('ChatOpenRouter instance created successfully');
             model.bindTools = model.bindTools.bind(model)
+            const multiModalOption: IMultiModalOption = {
+                image: {
+                    allowImageUploads: allowImageUploads ?? false
+                }
+            };
+            model.setMultiModalOption(multiModalOption);
+    
 
             if (cache) obj.cache = cache
             if (maxTokens) obj.maxTokens = parseInt(maxTokens, 10)
